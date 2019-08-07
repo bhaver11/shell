@@ -11,6 +11,8 @@ int commandIndex;
 char commandLineIp[1024];
 char* command[5];
 char cwd[50];
+time_t start,end;
+double timeToExeucte;
 
 void clear() {
     /*The sequence of special characters '\33[3J\33[H\33[2J' is ascii escape sequence
@@ -29,13 +31,13 @@ void printEnv() {
 
 void main() {
     char *dirCommand = malloc(50);
-    printf("Welcome to myshell, Enter a command to execute\n");
+    printf("Welcome to myshell, Enter a command to execute");
     while(1) {
         strcpy(dirCommand, "ls -l ");
         for(int i = 0; i<5; i++) {
             command[i] = NULL;
         }
-        printf(">");
+        printf("\n>");
         getcwd(cwd,sizeof(cwd));
         scanf("%[^\n]",commandLineIp);
         getchar();
@@ -55,15 +57,24 @@ void main() {
         switch (commandIndex)
         {
         case 0:
+            start = clock();
             clear();
+            end = clock();
+            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         case 1:
             command[1] = command[1]?command[1]:"";
             strcat(dirCommand,command[1]);
+            start = clock();
             system(dirCommand);
+            end = clock();
+            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         case 2:
+            start = clock();
             printEnv();
+            end = clock();
+            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         case 3:
             free(dirCommand);
@@ -72,5 +83,6 @@ void main() {
         default:
             break;
         }
+        printf("Time taken : %lf",timeToExeucte);
     }
 }
