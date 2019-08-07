@@ -9,6 +9,7 @@ extern char **environ; //pointer to array of pointers to environment strings
 char* internalCommands[] = {"clr","dir", "env","quit"}; //internal commands which are executed using c functions
 int commandIndex;
 char commandLineIp[1024];
+char commandLineIpTemp[1024];
 char* command[5];
 char cwd[50];
 time_t start,end;
@@ -41,7 +42,7 @@ void main() {
         getcwd(cwd,sizeof(cwd));
         scanf("%[^\n]",commandLineIp);
         getchar();
-
+        strcpy(commandLineIpTemp,commandLineIp); //strtok() modifies the original string hence a copy is saved
         command[0] = strtok(commandLineIp," ");
         int i = 0;
         while(command[i]!= NULL) {
@@ -81,6 +82,10 @@ void main() {
             _exit(0);
             break;
         default:
+            start = clock();
+            system(commandLineIpTemp);
+            end = clock();
+            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         }
         printf("Time taken : %lf",timeToExeucte);
