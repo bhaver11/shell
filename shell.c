@@ -6,7 +6,7 @@
 
 extern char **environ; //pointer to array of pointers to environment strings
 
-char* internalCommands[] = {"clr","dir", "env","quit"}; //internal commands which are executed using c functions
+char* internalCommands[] = {"clr","dir", "env","quit","cd"}; //internal commands which are executed using c functions
 int commandIndex;
 char commandLineIp[1024];
 char commandLineIpTemp[1024];
@@ -24,13 +24,15 @@ void clear() {
 
 void printEnv() {
     printf("Printing Environment Variables\n");
-    for(int i = 0; i < sizeof(*environ)/sizeof(**environ); i++) 
-    {
+    int i = 0;
+    while(*(environ + i) != NULL) {
         printf("%s\n",*(environ + i));
+        i++;
     }
 }
 
 void main() {
+    char *pwd = malloc(50);
     char *dirCommand = malloc(50);
     printf("Welcome to myshell, Enter a command to execute");
     while(1) {
@@ -38,8 +40,8 @@ void main() {
         for(int i = 0; i<5; i++) {
             command[i] = NULL;
         }
-        printf("\n>");
         getcwd(cwd,sizeof(cwd));
+        printf("\n%s>",cwd);
         scanf("%[^\n]",commandLineIp);
         getchar();
         strcpy(commandLineIpTemp,commandLineIp); //strtok() modifies the original string hence a copy is saved
@@ -61,7 +63,6 @@ void main() {
             start = clock();
             clear();
             end = clock();
-            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         case 1:
             command[1] = command[1]?command[1]:"";
@@ -69,25 +70,37 @@ void main() {
             start = clock();
             system(dirCommand);
             end = clock();
-            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         case 2:
             start = clock();
             printEnv();
             end = clock();
-            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         case 3:
             free(dirCommand);
             _exit(0);
             break;
+        case 4:
+            if(command[1]) {
+                printf("pwd before change : %s\n",getenv("PWD"));
+                start = clock();
+                chdir(command[1]);
+                getcwd(cwd,sizeof(cwd));
+                strcpy(pwd,"PWD=");
+                strcat(pwd,cwd);
+                putenv(pwd);
+                end = clock();
+                printf("pwd after change : %s\n",getenv("PWD"));
+            }
+            else
+                printf("Current directory : %s\n",cwd);
         default:
             start = clock();
             system(commandLineIpTemp);
             end = clock();
-            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
             break;
         }
+        timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
         printf("Time taken : %lf",timeToExeucte);
     }
 }
