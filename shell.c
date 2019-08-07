@@ -1,11 +1,16 @@
 #include<stdio.h>
 #include<string.h>
 #include<unistd.h>
+#include<stdlib.h>
+#include<time.h>
 
 extern char **environ; //pointer to array of pointers to environment strings
 
 char* internalCommands[] = {"clr","dir", "env","quit"}; //internal commands which are executed using c functions
 int commandIndex;
+char commandLineIp[1024];
+char* command[5];
+char cwd[50];
 
 void clear() {
     /*The sequence of special characters '\33[3J\33[H\33[2J' is ascii escape sequence
@@ -23,15 +28,15 @@ void printEnv() {
 }
 
 void main() {
-    char commandLineIp[20];
-    char* command[5];
-    char cwd[50];
-    
+    char *dirCommand = malloc(50);
+    printf("Welcome to myshell, Enter a command to execute\n");
     while(1) {
+        strcpy(dirCommand, "ls -l ");
+        for(int i = 0; i<5; i++) {
+            command[i] = NULL;
+        }
+        printf(">");
         getcwd(cwd,sizeof(cwd));
-        printf("Welcome to myshell, Enter a command to execute or ask a question..\n>");
-        if(cwd!=NULL)
-        printf("%s$",cwd);
         scanf("%[^\n]",commandLineIp);
         getchar();
 
@@ -53,13 +58,15 @@ void main() {
             clear();
             break;
         case 1:
-            printf("Changing directory to : %s",command[1]);
-            chdir(command[1]);
+            command[1] = command[1]?command[1]:"";
+            strcat(dirCommand,command[1]);
+            system(dirCommand);
             break;
         case 2:
             printEnv();
             break;
         case 3:
+            free(dirCommand);
             _exit(0);
             break;
         default:
@@ -67,5 +74,3 @@ void main() {
         }
     }
 }
-
-
