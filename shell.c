@@ -32,8 +32,9 @@ void printEnv() {
 }
 
 void main() {
-    char *pwd = malloc(50);
-    char *dirCommand = malloc(50);
+    char *pwdCmd = malloc(sizeof(char)*100);
+    char *oldPwdCmd = malloc(sizeof(char)*100);
+    char *dirCommand = malloc(sizeof(char)*100);
     printf("Welcome to myshell, Enter a command to execute");
     while(1) {
         strcpy(dirCommand, "ls -l ");
@@ -82,15 +83,20 @@ void main() {
             break;
         case 4:
             if(command[1]) {
-                printf("pwd before change : %s\n",getenv("PWD"));
+                printf("PWD before change : %s\n",getenv("PWD"));
+                printf("OLDPWD before change : %s\n",getenv("OLDPWD"));
                 start = clock();
+                strcpy(oldPwdCmd,"OLDPWD=");
+                strcat(oldPwdCmd,cwd);
                 chdir(command[1]);
                 getcwd(cwd,sizeof(cwd));
-                strcpy(pwd,"PWD=");
-                strcat(pwd,cwd);
-                putenv(pwd);
+                strcpy(pwdCmd,"PWD=");
+                strcat(pwdCmd,cwd);
+                putenv(pwdCmd);
+                putenv(oldPwdCmd);
                 end = clock();
-                printf("pwd after change : %s\n",getenv("PWD"));
+                printf("\nPWD after change : %s\n",getenv("PWD"));
+                printf("OLDPWD after change : %s\n",getenv("OLDPWD"));
             }
             else
                 printf("Current directory : %s\n",cwd);
