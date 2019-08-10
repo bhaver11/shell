@@ -31,6 +31,51 @@ void printEnv() {
     }
 }
 
+void listDirContent(char *dirCmd, char *dirLocation) {
+    strcat(dirCmd,dirLocation);
+    system(dirCmd);
+}
+
+void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
+    char newCwd[50];
+    if(newDirectory) {
+        chdir(newDirectory);
+        getcwd(newCwd,sizeof(newCwd));
+        if(strcmp(newCwd, cwd) !=0) {
+            printf("PWD before change : %s\n",getenv("PWD"));
+            printf("OLDPWD before change : %s\n",getenv("OLDPWD"));
+            strcpy(oldPwdCmd,"OLDPWD=");
+            strcat(oldPwdCmd,cwd);
+            strcpy(pwdCmd,"PWD=");
+            strcat(pwdCmd,newCwd);
+            putenv(pwdCmd);
+            putenv(oldPwdCmd);
+            strcpy(cwd,newCwd);
+            printf("\nPWD after change : %s\n",getenv("PWD"));
+            printf("OLDPWD after change : %s\n",getenv("OLDPWD"));
+        }else {
+            if(strcmp(newDirectory,"-")==0) {
+                strcpy(newCwd,getenv("OLDPWD"));
+                chdir(newCwd);
+                printf("PWD before change : %s\n",getenv("PWD"));
+                printf("OLDPWD before change : %s\n",getenv("OLDPWD"));
+                strcpy(oldPwdCmd,"OLDPWD=");
+                strcat(oldPwdCmd,cwd);
+                strcpy(pwdCmd,"PWD=");
+                strcat(pwdCmd,newCwd);
+                strcpy(cwd,newCwd);
+                putenv(pwdCmd);
+                putenv(oldPwdCmd);
+                printf("\nPWD after change : %s\n",getenv("PWD"));
+                printf("OLDPWD after change : %s\n",getenv("OLDPWD"));
+            } else {
+            }
+        }
+    }
+    else
+        printf("Current directory : %s\n",cwd);
+}
+
 void main() {
     char *pwdCmd = malloc(sizeof(char)*100);
     char *oldPwdCmd = malloc(sizeof(char)*100);
@@ -57,7 +102,6 @@ void main() {
             if(strcmp(command[0],internalCommands[commandIndex])==0)
                 break;
         }
-
         switch (commandIndex)
         {
         case 0:
@@ -66,10 +110,9 @@ void main() {
             end = clock();
             break;
         case 1:
-            command[1] = command[1]?command[1]:"";
-            strcat(dirCommand,command[1]);
             start = clock();
-            system(dirCommand);
+            command[1] = command[1]?command[1]:""; //when no input to dir is given directory location = ""
+            listDirContent(dirCommand,command[1]);
             end = clock();
             break;
         case 2:
@@ -82,24 +125,10 @@ void main() {
             _exit(0);
             break;
         case 4:
-            if(command[1]) {
-                printf("PWD before change : %s\n",getenv("PWD"));
-                printf("OLDPWD before change : %s\n",getenv("OLDPWD"));
-                start = clock();
-                strcpy(oldPwdCmd,"OLDPWD=");
-                strcat(oldPwdCmd,cwd);
-                chdir(command[1]);
-                getcwd(cwd,sizeof(cwd));
-                strcpy(pwdCmd,"PWD=");
-                strcat(pwdCmd,cwd);
-                putenv(pwdCmd);
-                putenv(oldPwdCmd);
-                end = clock();
-                printf("\nPWD after change : %s\n",getenv("PWD"));
-                printf("OLDPWD after change : %s\n",getenv("OLDPWD"));
-            }
-            else
-                printf("Current directory : %s\n",cwd);
+            start = clock();
+            changeDirectory(pwdCmd, oldPwdCmd, command[1]);
+            end = clock();
+            break;
         default:
             start = clock();
             system(commandLineIpTemp);
