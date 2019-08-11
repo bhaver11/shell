@@ -39,6 +39,9 @@ void listDirContent(char *dirCmd, char *dirLocation) {
 void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
     char newCwd[50];
     if(newDirectory) {
+        if(strcmp(newDirectory,"-") == 0) //TO GO BACK TO PREVIOUS DIRECTORY (oldpwd)
+            if(getenv("OLDPWD"))
+                strcpy(newDirectory,getenv("OLDPWD"));
         chdir(newDirectory);
         getcwd(newCwd,sizeof(newCwd));
         if(strcmp(newCwd, cwd) !=0) {
@@ -54,23 +57,8 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
             printf("\nPWD after change : %s\n",getenv("PWD"));
             printf("OLDPWD after change : %s\n",getenv("OLDPWD"));
         }else {
-            if(strcmp(newDirectory,"-")==0) {
-                strcpy(newCwd,getenv("OLDPWD"));
-                chdir(newCwd);
-                printf("PWD before change : %s\n",getenv("PWD"));
-                printf("OLDPWD before change : %s\n",getenv("OLDPWD"));
-                strcpy(oldPwdCmd,"OLDPWD=");
-                strcat(oldPwdCmd,cwd);
-                strcpy(pwdCmd,"PWD=");
-                strcat(pwdCmd,newCwd);
-                strcpy(cwd,newCwd);
-                putenv(pwdCmd);
-                putenv(oldPwdCmd);
-                printf("\nPWD after change : %s\n",getenv("PWD"));
-                printf("OLDPWD after change : %s\n",getenv("OLDPWD"));
-            } else {
+                printf("Current directory : %s\n",cwd);
             }
-        }
     }
     else
         printf("Current directory : %s\n",cwd);
