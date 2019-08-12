@@ -9,7 +9,7 @@
 extern char **environ; //pointer to array of pointers to environment strings
 
 char* internalCommands[] = {"clr","dir", "env","quit","cd"}; //internal commands which are executed using c functions
-int commandIndex;
+int commandIndex,status;
 char commandLineIp[1024];
 char commandLineIpTemp[1024];
 char* command[5];
@@ -67,7 +67,6 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
 }
 
 void forkAndExecute(char* commandIp[5]) {
-    int status;
     char* path = malloc(sizeof(char)*10);
     strcpy(path,"/bin/");
     strcat(path,commandIp[0]);
@@ -85,7 +84,7 @@ void forkAndExecute(char* commandIp[5]) {
         // parent process
         wait(&status);
         if(status == 256) {
-            printf("Shell: command not found\n");
+            printf("Shell: command not found");
         }
         break;
     }
@@ -150,7 +149,9 @@ void main() {
             end = clock();
             break;
         }
-        timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
-        printf("Time taken : %lf",timeToExeucte);
+        if(status != 256) {
+            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
+            printf("\nTime taken : %lf",timeToExeucte);
+        }
     }
 }
