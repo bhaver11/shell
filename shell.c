@@ -3,6 +3,8 @@
 #include<unistd.h>
 #include<stdlib.h>
 #include<time.h>
+#include <sys/types.h> 
+#include <sys/wait.h> 
 
 extern char **environ; //pointer to array of pointers to environment strings
 
@@ -64,6 +66,31 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
         printf("Current directory : %s\n",cwd);
 }
 
+void forkAndExecute(char* commandIp[5]) {
+    int status;
+    char* path = malloc(sizeof(char)*10);
+    strcpy(path,"/bin/");
+    strcat(path,commandIp[0]);
+    switch (fork())
+    {
+    case -1:
+        printf("Error while forking !");
+        break;
+    case 0:
+        // child process
+        status = execv(path, commandIp);
+        if(status == -1)
+            exit(1); //if command not found
+    default:
+        // parent process
+        wait(&status);
+        if(status == 256) {
+            printf("Shell: command not found\n");
+        }
+        break;
+    }
+}
+
 void main() {
     char *pwdCmd = malloc(sizeof(char)*100);
     char *oldPwdCmd = malloc(sizeof(char)*100);
@@ -119,7 +146,7 @@ void main() {
             break;
         default:
             start = clock();
-            system(commandLineIpTemp);
+            forkAndExecute(command);
             end = clock();
             break;
         }
