@@ -11,10 +11,11 @@ extern char **environ; //pointer to array of pointers to environment strings
 
 char* internalCommands[] = {"clr","dir", "env","quit","cd"}; //internal commands which are executed using c functions
 int commandIndex,status,isBackgroundTask = 0, backgroundProcessCount=0;
-int isInternalCmd = 1;
+int isInternalCmd = 1, isSerialExecution, isParallelExecution;
 char commandLineIp[1024];
 char commandLineIpTemp[1024];
 char* command[5];
+char* commandMultiple[5];
 char cwd[50];
 char* message;
 time_t start,end;
@@ -62,8 +63,10 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
             printf("AFTER:\nOLDPWD=%s\n",getenv("OLDPWD"));
             printf("PWD=%s\n",getenv("PWD"));
         }else {
-                printf("Current directory : %s\n",cwd);
-            }
+            printf("ERROR: Directory does not exist\n");
+            printf("BEFORE: ...\n");
+            printf("AFTER: ...\n");
+        }
     }
     else
         printf("Current directory : %s\n",cwd);
@@ -75,7 +78,7 @@ void reapChild(int sig) {
     pid_t pid;
     pid = wait(NULL);
     sprintf(message,"\nMyShell: Background process [%d] finished\n%s>",pid,cwd);
-    write(1,message,120);
+    write(1,message,strlen(message)+1);
     signal(SIGCHLD,NULL);
 }
 
@@ -95,20 +98,96 @@ void forkAndExecute(char* commandIp[5]) {
         if(status == -1)
             _exit(1); //if command not found
     default:
-        // parent process
-        if(isBackgroundTask == 0) {
-            wait(&status);
-            if(status == 256) {
-                printf("Shell: command not found\n");
+        if(isParallelExecution == 0) {
+            // parent process
+            if(isBackgroundTask == 0) {
+                wait(&status);
+                if(status == 256) {
+                    printf("Shell: command not found\n");
+                }
+            } else {
+                backgroundProcessCount++;
+                printf("[%d] %d\n",backgroundProcessCount,pid);
+                isBackgroundTask = 0;
+                signal(SIGCHLD,reapChild);
             }
-        } else {
-            backgroundProcessCount++;
-            printf("[%d] %d\n",backgroundProcessCount,pid);
-            isBackgroundTask = 0;
-            signal(SIGCHLD,reapChild);
         }
         break;
     }
+}
+
+void separateCommandAndArgs(char* cmdLineIp) {
+    for(int i = 0; i<5; i++) {
+        command[i] = NULL;
+    }
+    command[0] = strtok(cmdLineIp," ");
+    int i = 0;
+    while(command[i]!= NULL) {
+        i++;
+        command[i] = strtok(NULL, " ");
+        if(command[i])
+            if(strcmp(command[i],"&") == 0) {
+                isBackgroundTask = 1;
+                command[i] = NULL;
+        }
+    }
+}
+
+int decodeAndExecute(char * cmdLineIp, char * pwdCmd, char* oldPwdCmd, char* dirCommand) {
+    isInternalCmd = 1;
+    strcpy(dirCommand, "ls -l ");
+    separateCommandAndArgs(cmdLineIp);    
+    for (commandIndex = 0; commandIndex < sizeof(internalCommands)/sizeof(char*); commandIndex++)
+    {
+        if(strcmp(command[0],internalCommands[commandIndex])==0)
+            break;
+    }
+    switch (commandIndex)
+    {
+    case 0:
+        start = clock();
+        clear();
+        end = clock();
+        break;
+    case 1:
+        start = clock();
+        command[1] = command[1]?command[1]:""; //when no input to dir is given directory location = ""
+        listDirContent(dirCommand,command[1]);
+        end = clock();
+        break;
+    case 2:
+        start = clock();
+        printEnv();
+        end = clock();
+        break;
+    case 3:
+        free(dirCommand);
+        _exit(0);
+        break;
+    case 4:
+        start = clock();
+        changeDirectory(pwdCmd, oldPwdCmd, command[1]);
+        end = clock();
+        break;
+    default:
+        isInternalCmd = 0;
+        forkAndExecute(command);
+        break;
+    }
+    if(isInternalCmd) {
+        timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
+        printf("Time taken : %lf \n",timeToExeucte);
+    }
+    return 0;
+}
+
+char* splitString(char* inputString, char* separator, char* outputStringTokens[]) {
+    outputStringTokens[0] = strtok(commandLineIp,separator);
+        int i = 0;
+        while(outputStringTokens[i]!= NULL) {
+            i++;
+            outputStringTokens[i] = strtok(NULL, separator);
+        }
 }
 
 void main() {
@@ -119,12 +198,8 @@ void main() {
     putenv("ASSINGMENT=ASSINGMENT_1");
     printf("Welcome to myshell, Enter a command to execute \n");
     while(1) {
-        isInternalCmd = 1;
-        strcpy(dirCommand, "ls -l ");
+        isParallelExecution = isSerialExecution = isBackgroundTask = 0;
         strcpy(commandLineIp,"");
-        for(int i = 0; i<5; i++) {
-            command[i] = NULL;
-        }
         getcwd(cwd,sizeof(cwd));
         printf("%s>",cwd);
         scanf("%[^\n]",commandLineIp);
@@ -134,57 +209,54 @@ void main() {
             continue;
 
         strcpy(commandLineIpTemp,commandLineIp); //strtok() modifies the original string hence a copy is saved
-        command[0] = strtok(commandLineIp," ");
-        int i = 0;
-        while(command[i]!= NULL) {
-            i++;
-            command[i] = strtok(NULL, " ");
-            if(command[i])
-                if(strcmp(command[i],"&") == 0) {
-                    isBackgroundTask = 1;
-                    command[i] = NULL;
+        if(strstr(commandLineIp,"&&&") != NULL) {
+            isParallelExecution = 1;
+            commandMultiple[0] = strtok(commandLineIp,"&&&");
+            int j = 0;
+            while(commandMultiple[j] != NULL){
+                j++;
+                commandMultiple[j] = strtok(NULL,"&&&");
+            }
+            j = 0;
+            while(commandMultiple[j] != NULL) {
+                separateCommandAndArgs(commandMultiple[j]);
+                forkAndExecute(command);
+                j++;
+            }
+            for(int i = 0; i<j; i++) {
+                wait(NULL);
+            }
+        }
+        else if(strstr(commandLineIp,"&&") != NULL) {
+                isSerialExecution = 1;
+                commandMultiple[0] = strtok(commandLineIp,"&&");
+                int j = 0;
+                while(commandMultiple[j] != NULL){
+                    j++;
+                    commandMultiple[j] = strtok(NULL,"&&");
                 }
-        }
-        for (commandIndex = 0; commandIndex < sizeof(internalCommands)/sizeof(char*); commandIndex++)
-        {
-            if(strcmp(command[0],internalCommands[commandIndex])==0)
-                break;
-        }
-        switch (commandIndex)
-        {
-        case 0:
-            start = clock();
-            clear();
-            end = clock();
-            break;
-        case 1:
-            start = clock();
-            command[1] = command[1]?command[1]:""; //when no input to dir is given directory location = ""
-            listDirContent(dirCommand,command[1]);
-            end = clock();
-            break;
-        case 2:
-            start = clock();
-            printEnv();
-            end = clock();
-            break;
-        case 3:
-            free(dirCommand);
-            _exit(0);
-            break;
-        case 4:
-            start = clock();
-            changeDirectory(pwdCmd, oldPwdCmd, command[1]);
-            end = clock();
-            break;
-        default:
-            isInternalCmd = 0;
-            forkAndExecute(command);
-            break;
-        }
-        if(isInternalCmd) {
-            timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
-            printf("Time taken : %lf \n",timeToExeucte);
-        }
+                j = 0;
+                while(commandMultiple[j] != NULL) {
+                    decodeAndExecute(commandMultiple[j],pwdCmd,oldPwdCmd,dirCommand);
+                    j++;
+                }
+            }
+            else 
+                if(strstr(commandLineIp,"&") != NULL) {
+                    isBackgroundTask = 1;
+                    commandMultiple[0] = strtok(commandLineIp,"&");
+                    int j = 0;
+                    while(commandMultiple[j] != NULL){
+                        j++;
+                        commandMultiple[j] = strtok(NULL,"&");
+                    }
+                    j = 0;
+                    while(commandMultiple[j] != NULL) {
+                        decodeAndExecute(commandMultiple[j],pwdCmd,oldPwdCmd,dirCommand);
+                        j++;
+                    }
+                } else {
+                    decodeAndExecute(commandLineIp,pwdCmd,oldPwdCmd,dirCommand);
+                }
     }
 }
