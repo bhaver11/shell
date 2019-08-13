@@ -16,6 +16,7 @@ char commandLineIp[1024];
 char commandLineIpTemp[1024];
 char* command[5];
 char cwd[50];
+char* message;
 time_t start,end;
 double timeToExeucte;
 
@@ -49,8 +50,8 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
         chdir(newDirectory);
         getcwd(newCwd,sizeof(newCwd));
         if(strcmp(newCwd, cwd) !=0) {
-            printf("PWD before change : %s\n",getenv("PWD"));
-            printf("OLDPWD before change : %s\n",getenv("OLDPWD"));
+            printf("BEFORE:\nOLDPWD=%s\n",getenv("OLDPWD"));
+            printf("PWD=%s\n",getenv("PWD"));
             strcpy(oldPwdCmd,"OLDPWD=");
             strcat(oldPwdCmd,cwd);
             strcpy(pwdCmd,"PWD=");
@@ -58,8 +59,8 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
             putenv(pwdCmd);
             putenv(oldPwdCmd);
             strcpy(cwd,newCwd);
-            printf("\nPWD after change : %s\n",getenv("PWD"));
-            printf("OLDPWD after change : %s\n",getenv("OLDPWD"));
+            printf("AFTER:\nOLDPWD=%s\n",getenv("OLDPWD"));
+            printf("PWD=%s\n",getenv("PWD"));
         }else {
                 printf("Current directory : %s\n",cwd);
             }
@@ -69,9 +70,12 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
 }
 
 void reapChild(int sig) {
+    message = malloc(sizeof(char)*60);
+    backgroundProcessCount--;
     pid_t pid;
     pid = wait(NULL);
-    printf("Child exited %d",pid);
+    sprintf(message,"\nMyShell: Background process [%d] finished\n%s>",pid,cwd);
+    write(1,message,120);
     signal(SIGCHLD,NULL);
 }
 
@@ -95,11 +99,11 @@ void forkAndExecute(char* commandIp[5]) {
         if(isBackgroundTask == 0) {
             wait(&status);
             if(status == 256) {
-                printf("Shell: command not found");
+                printf("Shell: command not found\n");
             }
         } else {
             backgroundProcessCount++;
-            printf("[%d] %d",backgroundProcessCount,pid);
+            printf("[%d] %d\n",backgroundProcessCount,pid);
             isBackgroundTask = 0;
             signal(SIGCHLD,reapChild);
         }
@@ -111,6 +115,8 @@ void main() {
     char *pwdCmd = malloc(sizeof(char)*100);
     char *oldPwdCmd = malloc(sizeof(char)*100);
     char *dirCommand = malloc(sizeof(char)*100);
+    putenv("COURSE=CS_744");
+    putenv("ASSINGMENT=ASSINGMENT_1");
     printf("Welcome to myshell, Enter a command to execute \n");
     while(1) {
         isInternalCmd = 1;
