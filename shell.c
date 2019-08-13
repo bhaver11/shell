@@ -3,13 +3,15 @@
 #include<unistd.h>
 #include<stdlib.h>
 #include<time.h>
+#include<signal.h>
 #include <sys/types.h> 
 #include <sys/wait.h> 
 
 extern char **environ; //pointer to array of pointers to environment strings
 
 char* internalCommands[] = {"clr","dir", "env","quit","cd"}; //internal commands which are executed using c functions
-int commandIndex,status;
+int commandIndex,status,isBackgroundTask = 0, backgroundProcessCount=0;
+int isInternalCmd = 1;
 char commandLineIp[1024];
 char commandLineIpTemp[1024];
 char* command[5];
@@ -66,11 +68,19 @@ void changeDirectory(char *pwdCmd, char *oldPwdCmd, char* newDirectory) {
         printf("Current directory : %s\n",cwd);
 }
 
+void reapChild(int sig) {
+    pid_t pid;
+    pid = wait(NULL);
+    printf("Child exited %d",pid);
+    signal(SIGCHLD,NULL);
+}
+
 void forkAndExecute(char* commandIp[5]) {
     char* path = malloc(sizeof(char)*10);
     strcpy(path,"/bin/");
     strcat(path,commandIp[0]);
-    switch (fork())
+    pid_t pid;
+    switch (pid = fork())
     {
     case -1:
         printf("Error while forking !");
@@ -79,12 +89,19 @@ void forkAndExecute(char* commandIp[5]) {
         // child process
         status = execv(path, commandIp);
         if(status == -1)
-            exit(1); //if command not found
+            _exit(1); //if command not found
     default:
         // parent process
-        wait(&status);
-        if(status == 256) {
-            printf("Shell: command not found");
+        if(isBackgroundTask == 0) {
+            wait(&status);
+            if(status == 256) {
+                printf("Shell: command not found");
+            }
+        } else {
+            backgroundProcessCount++;
+            printf("[%d] %d",backgroundProcessCount,pid);
+            isBackgroundTask = 0;
+            signal(SIGCHLD,reapChild);
         }
         break;
     }
@@ -94,22 +111,33 @@ void main() {
     char *pwdCmd = malloc(sizeof(char)*100);
     char *oldPwdCmd = malloc(sizeof(char)*100);
     char *dirCommand = malloc(sizeof(char)*100);
-    printf("Welcome to myshell, Enter a command to execute");
+    printf("Welcome to myshell, Enter a command to execute \n");
     while(1) {
+        isInternalCmd = 1;
         strcpy(dirCommand, "ls -l ");
+        strcpy(commandLineIp,"");
         for(int i = 0; i<5; i++) {
             command[i] = NULL;
         }
         getcwd(cwd,sizeof(cwd));
-        printf("\n%s>",cwd);
+        printf("%s>",cwd);
         scanf("%[^\n]",commandLineIp);
         getchar();
+        
+        if(strcmp(commandLineIp,"") == 0)
+            continue;
+
         strcpy(commandLineIpTemp,commandLineIp); //strtok() modifies the original string hence a copy is saved
         command[0] = strtok(commandLineIp," ");
         int i = 0;
         while(command[i]!= NULL) {
             i++;
             command[i] = strtok(NULL, " ");
+            if(command[i])
+                if(strcmp(command[i],"&") == 0) {
+                    isBackgroundTask = 1;
+                    command[i] = NULL;
+                }
         }
         for (commandIndex = 0; commandIndex < sizeof(internalCommands)/sizeof(char*); commandIndex++)
         {
@@ -144,14 +172,13 @@ void main() {
             end = clock();
             break;
         default:
-            start = clock();
+            isInternalCmd = 0;
             forkAndExecute(command);
-            end = clock();
             break;
         }
-        if(status != 256) {
+        if(isInternalCmd) {
             timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
-            printf("\nTime taken : %lf",timeToExeucte);
+            printf("Time taken : %lf \n",timeToExeucte);
         }
     }
 }
