@@ -79,7 +79,8 @@ void reapChild(int sig) {
     pid = wait(NULL);
     sprintf(message,"\nMyShell: Background process [%d] finished\n%s>",pid,cwd);
     write(1,message,strlen(message)+1);
-    signal(SIGCHLD,NULL);
+    if(backgroundProcessCount == 0)
+        signal(SIGCHLD,NULL);
 }
 
 void forkAndExecute(char* commandIp[5]) {
@@ -241,22 +242,8 @@ void main() {
                     j++;
                 }
             }
-            else 
-                if(strstr(commandLineIp,"&") != NULL) {
-                    isBackgroundTask = 1;
-                    commandMultiple[0] = strtok(commandLineIp,"&");
-                    int j = 0;
-                    while(commandMultiple[j] != NULL){
-                        j++;
-                        commandMultiple[j] = strtok(NULL,"&");
-                    }
-                    j = 0;
-                    while(commandMultiple[j] != NULL) {
-                        decodeAndExecute(commandMultiple[j],pwdCmd,oldPwdCmd,dirCommand);
-                        j++;
-                    }
-                } else {
-                    decodeAndExecute(commandLineIp,pwdCmd,oldPwdCmd,dirCommand);
-                }
+            else {
+                decodeAndExecute(commandLineIp,pwdCmd,oldPwdCmd,dirCommand);
+            }
     }
 }
