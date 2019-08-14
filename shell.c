@@ -12,12 +12,14 @@ extern char **environ; //pointer to array of pointers to environment strings
 char* internalCommands[] = {"clr","dir", "env","quit","cd"}; //internal commands which are executed using c functions
 int commandIndex,status,isBackgroundTask = 0, backgroundProcessCount=0;
 int isInternalCmd = 1, isSerialExecution, isParallelExecution;
+int isIpFromFile,isOpToFile,appendToFile,isFileError;
 char commandLineIp[1024];
 char commandLineIpTemp[1024];
-char* command[5];
-char* commandMultiple[5];
+char* command[10];
+char* commandMultiple[10];
 char cwd[50];
 char* message;
+char *inputFileName,*outputFileName;
 time_t start,end;
 double timeToExeucte;
 
@@ -83,10 +85,11 @@ void reapChild(int sig) {
         signal(SIGCHLD,NULL);
 }
 
-void forkAndExecute(char* commandIp[5]) {
+void forkAndExecute(char* commandIp[10]) {
     char* path = malloc(sizeof(char)*10);
     strcpy(path,"/bin/");
     strcat(path,commandIp[0]);
+    
     pid_t pid;
     switch (pid = fork())
     {
@@ -95,6 +98,22 @@ void forkAndExecute(char* commandIp[5]) {
         break;
     case 0:
         // child process
+        if(isIpFromFile) {
+            if(access(inputFileName,R_OK) == 0)
+                freopen(inputFileName,"r",stdin);
+            else {
+                _exit(2);
+            }
+        }
+        if(isOpToFile) {
+            if(appendToFile == 1)
+                freopen(outputFileName,"a",stdout);
+            else
+                freopen(outputFileName,"w",stdout);
+        }
+        status = execv(path, commandIp);
+        strcpy(path,"/usr/bin/");
+        strcat(path,commandIp[0]);
         status = execv(path, commandIp);
         if(status == -1)
             _exit(1); //if command not found
@@ -105,6 +124,8 @@ void forkAndExecute(char* commandIp[5]) {
                 wait(&status);
                 if(status == 256) {
                     printf("Shell: command not found\n");
+                }else if(status == 512) {
+                    printf("Shell: File cannot be opened\n");
                 }
             } else {
                 backgroundProcessCount++;
@@ -118,7 +139,10 @@ void forkAndExecute(char* commandIp[5]) {
 }
 
 void separateCommandAndArgs(char* cmdLineIp) {
-    for(int i = 0; i<5; i++) {
+    isIpFromFile=isOpToFile=appendToFile=0;
+    inputFileName = NULL;
+    outputFileName = NULL;
+    for(int i = 0; i<10; i++) {
         command[i] = NULL;
     }
     command[0] = strtok(cmdLineIp," ");
@@ -126,10 +150,29 @@ void separateCommandAndArgs(char* cmdLineIp) {
     while(command[i]!= NULL) {
         i++;
         command[i] = strtok(NULL, " ");
-        if(command[i])
+        if(command[i]) {
             if(strcmp(command[i],"&") == 0) {
                 isBackgroundTask = 1;
                 command[i] = NULL;
+            }
+            if(strcmp(command[i],"<") == 0) {
+                isIpFromFile = 1;
+                inputFileName = strtok(NULL, " ");
+                command[i] = NULL;
+                command[i] = strtok(NULL," ");
+            }
+            if(command[i] && strcmp(command[i],">") == 0) {
+                isOpToFile = 1;
+                outputFileName = strtok(NULL, " ");
+                command[i] = NULL;
+            } else {
+                if(command[i] && strcmp(command[i],">>") == 0) {
+                    isOpToFile = 1;
+                    appendToFile = 1;
+                    outputFileName = strtok(NULL, " ");
+                    command[i] = NULL;
+                }
+            }
         }
     }
 }
