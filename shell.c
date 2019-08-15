@@ -13,6 +13,7 @@ char* internalCommands[] = {"clr","dir", "env","quit","cd"}; //internal commands
 int commandIndex,status,isBackgroundTask = 0, backgroundProcessCount=0;
 int isInternalCmd = 1, isSerialExecution, isParallelExecution;
 int isIpFromFile,isOpToFile,appendToFile,isFileError;
+int fileMode;
 char commandLineIp[1024];
 char commandLineIpTemp[1024];
 char* command[10];
@@ -22,6 +23,7 @@ char* message;
 char *inputFileName,*outputFileName;
 time_t start,end;
 double timeToExeucte;
+FILE* fileptr;
 
 void clear() {
     /*The sequence of special characters '\33[3J\33[H\33[2J' is ascii escape sequence
@@ -125,7 +127,7 @@ void forkAndExecute(char* commandIp[10]) {
                 if(status == 256) {
                     printf("Shell: command not found\n");
                 }else if(status == 512) {
-                    printf("Shell: File cannot be opened\n");
+                    printf("Error: File does not exist\n");
                 }
             } else {
                 backgroundProcessCount++;
@@ -234,20 +236,36 @@ char* splitString(char* inputString, char* separator, char* outputStringTokens[]
         }
 }
 
-void main() {
+int main(int argc, char** argv) {
     char *pwdCmd = malloc(sizeof(char)*100);
     char *oldPwdCmd = malloc(sizeof(char)*100);
     char *dirCommand = malloc(sizeof(char)*100);
+    
     putenv("COURSE=CS_744");
     putenv("ASSINGMENT=ASSINGMENT_1");
-    printf("Welcome to myshell, Enter a command to execute \n");
+    if(argv[1] != NULL) {
+        fileMode = 1;
+        fileptr = fopen(argv[1],"r");
+        if(fileptr == NULL) {
+            printf("Error: File does not exist\n");
+            return 0;
+        }
+    } else {
+        printf("Welcome to myshell, Enter a command to execute \n");
+    }
     while(1) {
         isParallelExecution = isSerialExecution = isBackgroundTask = 0;
         strcpy(commandLineIp,"");
         getcwd(cwd,sizeof(cwd));
-        printf("%s>",cwd);
-        scanf("%[^\n]",commandLineIp);
-        getchar();
+        
+        if(fileMode) {
+            if(fscanf(fileptr,"%[^\n]\n",commandLineIp) == EOF)
+            break;
+        }else {
+            printf("%s>",cwd);
+            scanf("%[^\n]",commandLineIp);
+            getchar();
+        }
         
         if(strcmp(commandLineIp,"") == 0)
             continue;
@@ -289,4 +307,5 @@ void main() {
                 decodeAndExecute(commandLineIp,pwdCmd,oldPwdCmd,dirCommand);
             }
     }
+    return 0;
 }
