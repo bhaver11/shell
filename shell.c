@@ -5,7 +5,8 @@
 #include<time.h>
 #include<signal.h>
 #include <sys/types.h> 
-#include <sys/wait.h> 
+#include <sys/wait.h>
+#include "myshell.h"
 
 extern char **environ; //pointer to array of pointers to environment strings
 
@@ -81,7 +82,10 @@ void reapChild(int sig) {
     backgroundProcessCount--;
     pid_t pid;
     pid = wait(NULL);
-    sprintf(message,"\nMyShell: Background process [%d] finished\n%s>",pid,cwd);
+    if(fileMode)
+        sprintf(message,"MyShell: Background process [%d] finished\n",pid);
+    else 
+        sprintf(message,"\nMyShell: Background process [%d] finished\n%s>",pid,cwd);
     write(1,message,strlen(message)+1);
     if(backgroundProcessCount == 0)
         signal(SIGCHLD,NULL);
@@ -125,7 +129,7 @@ void forkAndExecute(char* commandIp[10]) {
             if(isBackgroundTask == 0) {
                 wait(&status);
                 if(status == 256) {
-                    printf("Shell: command not found\n");
+                    printf("Error: command does not exist\n");
                 }else if(status == 512) {
                     printf("Error: File does not exist\n");
                 }
@@ -157,7 +161,7 @@ void separateCommandAndArgs(char* cmdLineIp) {
                 isBackgroundTask = 1;
                 command[i] = NULL;
             }
-            if(strcmp(command[i],"<") == 0) {
+            if(command[i] && strcmp(command[i],"<") == 0) {
                 isIpFromFile = 1;
                 inputFileName = strtok(NULL, " ");
                 command[i] = NULL;
@@ -225,15 +229,6 @@ int decodeAndExecute(char * cmdLineIp, char * pwdCmd, char* oldPwdCmd, char* dir
         printf("Time taken : %lfs\n",timeToExeucte);
     }
     return 0;
-}
-
-char* splitString(char* inputString, char* separator, char* outputStringTokens[]) {
-    outputStringTokens[0] = strtok(commandLineIp,separator);
-        int i = 0;
-        while(outputStringTokens[i]!= NULL) {
-            i++;
-            outputStringTokens[i] = strtok(NULL, separator);
-        }
 }
 
 int main(int argc, char** argv) {
@@ -307,5 +302,8 @@ int main(int argc, char** argv) {
                 decodeAndExecute(commandLineIp,pwdCmd,oldPwdCmd,dirCommand);
             }
     }
+    free(pwdCmd);
+    free(oldPwdCmd);
+    free(dirCommand);
     return 0;
 }
