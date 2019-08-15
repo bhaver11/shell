@@ -31,12 +31,12 @@ void clear() {
 }
 
 void printEnv() {
-    printf("Printing Environment Variables\n");
-    int i = 0;
-    while(*(environ + i) != NULL) {
-        printf("%s\n",*(environ + i));
-        i++;
-    }
+    // int i = 0;
+    // while(*(environ + i) != NULL) {
+    //     printf("%s\n",*(environ + i));
+    //     i++;
+    // }
+    printf("COURSE=%s\nASSINGMENT=%s\nPWD=%s\n",getenv("COURSE"),getenv("ASSINGMENT"),getenv("PWD"));
 }
 
 void listDirContent(char *dirCmd, char *dirLocation) {
@@ -220,7 +220,7 @@ int decodeAndExecute(char * cmdLineIp, char * pwdCmd, char* oldPwdCmd, char* dir
     }
     if(isInternalCmd) {
         timeToExeucte = ((double)(end - start))/CLOCKS_PER_SEC;
-        printf("Time taken : %lf \n",timeToExeucte);
+        printf("Time taken : %lfs\n",timeToExeucte);
     }
     return 0;
 }
