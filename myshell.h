@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-
 void clear();
 
 void printEnv();

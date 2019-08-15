@@ -1,6 +1,6 @@
 echo welcome to my shell
 dir /home
-echo abc &
+sleep 2 &
 pwd && sleep 5
 ls &&& pwd &&& sleep 5
 echo hi && echo blah > some_outfile

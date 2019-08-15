@@ -12,18 +12,16 @@
 
 all: rule1 #
 
-# file2.c also includes header2.h
-rule1: shell.c myshell.h # basically this tells that if any of these files are changed, next cmd should run
-	$(CC) $(CFLAGS) shell.c -o shell
+rule1: myshell.c myshell.h # basically this tells that if any of these files are changed, next cmd should run
+	$(CC) $(CFLAGS) myshell.c -o myshell
 
 run: rule1
-	./shell input
+	./myshell input
 
 clean:
-	$(RM) rule1 rule2
+	$(RM) rule1
 	$(RM) -r *.dSYM
-	$(RM) file2_executable
-
+	$(RM) myshell
 
 # To compile, type this: make
 # Then, execute by typing ./file2_executable <in_file>
