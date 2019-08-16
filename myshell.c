@@ -38,7 +38,7 @@ void printEnv() {
     // while(*(environ + i) != NULL) {
     //     printf("%s\n",*(environ + i));
     //     i++;
-    // }
+    // } // changed for part 2
     printf("COURSE=%s\nASSINGMENT=%s\nPWD=%s\n",getenv("COURSE"),getenv("ASSINGMENT"),getenv("PWD"));
 }
 

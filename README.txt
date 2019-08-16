@@ -68,3 +68,8 @@ Output to a file:
 
 Note: Input and Output redirection both can be used in the same command too. 
     Ex: command < inputfile > outputfile
+
+Some references: 
+- https://www.geeksforgeeks.org/strtok-strtok_r-functions-c-examples/
+- https://www.geeksforgeeks.org/zombie-processes-prevention/
+- https://www.tutorialspoint.com/c_standard_library/c_function_freopen.htm
