@@ -26,7 +26,7 @@ Running the executable :
         commands from the file "input" which is placed in the directory. In the file
         each line is a command. 
         You can also give a custom file as input by running the shell using the command
-            "./shell < myinputfile"
+            "./shell myinputfile"
         In this case the shell will run and execute commands present in "myinputfile"
         The output in each case will be printed on the terminal. 
 
